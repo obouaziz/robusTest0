@@ -15,4 +15,4 @@ The package contains the functions:
 - `robustest`that tests the independence between two continuous variables. The test is based on the maximum distance between the joint empirical cumulative distribution function and the product of the marginals. The distribution of this test has been numerically obtained, the test is exact for all n<=150 and approximated for n>150.
 - `tiebreak` which randomly breaks ties in vectors, either inside the vector or between two vectors.
 
-The dataset `Evans` can also be loaded from the **robusTest** package, this dataset was originally provided in the **lbreg** package.
+The dataset `Evans` can also be loaded from the **robusTest0** package, this dataset was originally provided in the **lbreg** package.
