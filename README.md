@@ -3,7 +3,7 @@
 Implementation of corrected two sample tests: corrections for the Pearson, Kendall and Spearman correlation tests, 
  the Mann-Whitney (Wilcoxon) rank sum test, the Mann-Whitney (Wilcoxon) signed rank test and a variance test. 
  The package also proposes a test for the median based on a kernel estimator of the density and a confidence interval for the median based on rank statistics. All the tests are asymptotically calibrated meaning that
-the probability of rejection under the null hypothesis is asymptotically equal to 5%. The package also proposes a test for independence between two continuous variables of Kolmogorov-Smirnov's type. This test is exact.
+the probability of rejection under the null hypothesis is asymptotically equal to 5%. The package also proposes a test for independence between two continuous variables of Kolmogorov-Smirnov's type. This test is exact but can be a bit slow with this version. Use robusTest for a faster version, implemented from Rcpp.
 
 The package contains the functions:
 
@@ -15,4 +15,4 @@ The package contains the functions:
 - `robustest`that tests the independence between two continuous variables. The test is based on the maximum distance between the joint empirical cumulative distribution function and the product of the marginals. The distribution of this test has been numerically obtained, the test is exact for all n<=150 and approximated for n>150.
 - `tiebreak` which randomly breaks ties in vectors, either inside the vector or between two vectors.
 
-The dataset `Evans` can also be loaded from the **test** package. A description of this dataset can be found in the **lbreg** package.
+The dataset `Evans` can also be loaded from the **robusTest** package, this dataset was originally provided in the **lbreg** package.
