@@ -1,0 +1,25 @@
+Package: robusTest0
+Title: Calibrated correlation, two samples tests
+Version: 0.0.1
+Authors@R: 
+    person(given = "Olivier",
+           family = "Bouaziz",
+           role = c("aut", "cre"),
+           email = "olivier.bouaziz@parisdecartes.fr")
+Description: Implementation of corrected two sample tests. A corrected version of the Pearson and Kendall correlation tests, 
+ the Mann-Whitney (Wilcoxon) rank sum test, the Mann-Whitney (Wilcoxon) signed rank test and the Fisher variance test are implemented.
+ The package also proposes a test for the median. All these corrected tests are asymptotically calibrated meaning that
+ the probability of rejection under the null hypothesis is asymptotically equal to 5%. The package also proposes a test for 
+ independence between two continuous variables of Kolmogorov-Smirnov's type. This test is exact.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Imports: 
+    stats
+Depends: 
+    R (>= 2.10)
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
