@@ -1,4 +1,4 @@
-#' Calibrated tests for correlation between paired samples
+#' Calibrated tests for correlation between paired samples (slow version)
 #'
 #' Tests the association/correlation for continuous paired samples using corrected versions of the Pearson's correlation test, Kendall's tau test and Spearman's rho test. These three tests are asymptotically calibrated.
 #' @param x,y the two continuous variables. Must be of same length.
@@ -17,25 +17,25 @@
 #' @keywords test
 #' @seealso \code{\link{vartest}}, \code{\link{indeptest}}, \code{\link{mediantest}}, \code{\link{wilcoxtest}}.
 #' @importFrom stats cov pnorm pt qnorm qt runif var
-#' @export
+#'
 #' @examples
 #' #Application on the Evans dataset
 #' #Description of this dataset is available in the lbreg package
 #' data(Evans)
 #' with(Evans,cor.test(CHL[CDH==1],DBP[CDH==1]))
-#' with(Evans,cortest(CHL[CDH==1],DBP[CDH==1]))
+#' with(Evans,cortest_slow(CHL[CDH==1],DBP[CDH==1]))
 #' #The pvalues are very different!
 #'
-#' with(Evans,cortest(CHL[CDH==1],DBP[CDH==1],method="kendall",ties.break="random"))
-#' with(Evans,cortest(CHL[CDH==1],DBP[CDH==1],method="spearman",ties.break="random"))
+#' with(Evans,cortest_slow(CHL[CDH==1],DBP[CDH==1],method="kendall",ties.break="random"))
+#' with(Evans,cortest_slow(CHL[CDH==1],DBP[CDH==1],method="spearman",ties.break="random"))
 #'
-#' #We use the function tiebreak to remove ties and compare the results from cor.test with cortest
+#' #We use the function tiebreak to remove ties and compare the results from cor.test with cortest_slow
 #' X=tiebreak(Evans$CHL[Evans$CDH==1])
 #' Y=tiebreak(Evans$DBP[Evans$CDH==1])
 #' cor.test(X,Y,method="kendall")
-#' cortest(X,Y,method="kendall")
+#' cortest_slow(X,Y,method="kendall")
 #' cor.test(X,Y,method="spearman")
-#' cortest(X,Y,method="spearman")
+#' cortest_slow(X,Y,method="spearman")
 
 #'
 #' #Simulated data
@@ -45,7 +45,8 @@
 #' X=rnorm(n,0,1)
 #' epsi=rnorm(n,0,1)
 #' Y=X^2+0.3*epsi
-#' list(test1=cortest(X,Y)$p.value,test2=cor.test(X,Y)$p.value) #cor.test is the standard Pearson test
+#' list(test1=cortest_slow(X,Y)$p.value,test2=cor.test(X,Y)$p.value)
+#' #cor.test is the standard Pearson test
 #' }
 #' res1=res2=rep(NA,M)
 #' # Replications to check if the the corrected Pearson test and the standard test are well calibrated
@@ -64,8 +65,8 @@
 #' X=rnorm(n,0,1)
 #' epsi=rnorm(n,0,1)
 #' Y=X^2+0.3*epsi
-#' list(test1=cortest(X,Y)$p.value,test2=cor.test(X,Y)$p.value,
-#' test3=cortest(X,Y,method="kendall")$p.value,
+#' list(test1=cortest_slow(X,Y)$p.value,test2=cor.test(X,Y)$p.value,
+#' test3=cortest_slow(X,Y,method="kendall")$p.value,
 #' test4=cor.test(X,Y,method="kendall")$p.value)
 #' #cor.test is the standard Pearson or Kendall correlation test
 #' }
@@ -84,9 +85,9 @@
 #' #mean(res3<0.05) #0.044
 #' #mean(res4<0.05) #0.154
 
-cortest <- function(x,y,alternative="two.sided",method="pearson",ties.break="none",conf.level=0.95) {UseMethod("cortest")}
-#' @export
-cortest.default=function(x,y,alternative="two.sided",method="pearson",ties.break="none",conf.level=0.95)#,ties.break="random"
+cortest_slow <- function(x,y,alternative="two.sided",method="pearson",ties.break="none",conf.level=0.95) {UseMethod("cortest_slow")}
+
+cortest_slow.default=function(x,y,alternative="two.sided",method="pearson",ties.break="none",conf.level=0.95)#,ties.break="random"
 {
   if (length(x)!=length(y)) stop("'x' and 'y' must have the same length")
   n <- length(x)
@@ -219,40 +220,33 @@ cortest.default=function(x,y,alternative="two.sided",method="pearson",ties.break
       #   Message=TRUE
       # }
     }
-    order_X <- order(x) # Il y a deja un tri fait pour casser les ex aequo. Il y a peut-etre moyen de le reutiliser ?
-    order_Y <- order(y)
-    rank_X <- array(0, dim=n)
-    rank_Y <- array(0, dim=n)
+    R <- array(0,dim=c(n,n,n))
+    S <- array(0,dim=c(n,n,n))
+    HX <- array(0,dim=c(n,n))
+    HY <- array(0,dim=c(n,n))
     for(i in 1:n)
     {
-      rank_X[order_X[i]] <- i
-      rank_Y[order_Y[i]] <- i
-    }
-    HXmeans <- array(0, dim=n)
-    HYmeans <- array(0, dim=n)
-    sumR <- 0
-    FXY <- array(0, dim=c(n,n))
-    for(i in 1:n)
-    {
-      HXmeans[i] <- (rank_X[i]-1)/n
-      HYmeans[i] <- (rank_Y[i]-1)/n
-      #sumR <- sumR + (rank_x[i]-1)*(rank_y[i]-1) + (n-rank_x[i])*(n-rank_y[i]) - (rank_x[i]-1)*(n-rank_y[i]) - (n-rank_x[i])*(rank_y[i]-1)
-      sumR <- sumR + (2*rank_X[i]-n-1)*(2*rank_Y[i]-n-1)
-    }
-    for(k in 1:n)
-    {
-      cpt <- 0
       for(j in 1:n)
       {
-        FXY[order_X[j], order_Y[k]] <- cpt/n
-        if (y[order_X[j]] < y[order_Y[k]]) cpt = cpt + 1
+        HX[i,j]<- (x[i]<x[j])
+        HY[i,j]<- (y[i]<y[j])
+        for(k in 1:n)
+        {
+          R[i,j,k]<-((x[i]-x[j])*(y[i]-y[k]))>0
+          R[i,j,k]<-2*(R[i,j,k]-0.5)
+          #R[i,j,j]=0
+          R[i,j,i]=0
+          R[i,i,k]=0
+          S[i,j,k]<-(x[i]<x[j]) & (y[i]<y[k])
+        }
       }
     }
-    Hprod<-HXmeans*HYmeans - HXmeans - HYmeans
-    H2<-rowMeans(FXY)+colMeans(FXY)
+    Hprod<-apply(HX, 2, mean)*apply(HY, 2, mean) - apply(HX, 2, mean) - apply(HY, 2, mean)
+    FXY<-apply(S, c(2,3), mean)
+    H2<-apply(FXY,1,mean)+apply(FXY,2,mean)
     V<-16*var(H2+Hprod)
-    estimate=3*sumR/(n^3-n)
-    Tn<-sqrt(n)*sumR/(n*(n-1)*(n-2)*sqrt(V))
+    estimate=3*sum(R)/(n^3-n)
+    Tn<-sqrt(n)*sum(R)/(n*(n-1)*(n-2)*sqrt(V))
     if (alternative=="two.sided" | alternative=="t"){
       Pval <- 2*(1-pnorm(abs(Tn)))}
     if (alternative=="less"| alternative=="l"){
@@ -262,12 +256,12 @@ cortest.default=function(x,y,alternative="two.sided",method="pearson",ties.break
     CIl=CIr=NULL
   }
   result <- list(statistic=Tn, p.value=Pval,CI=c(CIl,CIr),conf.level=conf.level, estimate=estimate,alternative=alternative,method=method,Message=Message)
-  class(result)<-"test"
+  class(result)<-"slow_test"
   return(result)
 }
 
-#' @export
-print.test <- function(x, ...)
+
+print.slow_test <- function(x, ...)
 {
   corval=x$estimate
   if (x$method=="pearson"){
