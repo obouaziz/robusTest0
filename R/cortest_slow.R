@@ -17,7 +17,7 @@
 #' @keywords test
 #' @seealso \code{\link{vartest}}, \code{\link{indeptest}}, \code{\link{mediantest}}, \code{\link{wilcoxtest}}.
 #' @importFrom stats cov pnorm pt qnorm qt runif var
-#'
+#' @export
 #' @examples
 #' #Application on the Evans dataset
 #' #Description of this dataset is available in the lbreg package
@@ -87,6 +87,7 @@
 
 cortest_slow <- function(x,y,alternative="two.sided",method="pearson",ties.break="none",conf.level=0.95) {UseMethod("cortest_slow")}
 
+#' @export
 cortest_slow.default=function(x,y,alternative="two.sided",method="pearson",ties.break="none",conf.level=0.95)#,ties.break="random"
 {
   if (length(x)!=length(y)) stop("'x' and 'y' must have the same length")
@@ -260,7 +261,7 @@ cortest_slow.default=function(x,y,alternative="two.sided",method="pearson",ties.
   return(result)
 }
 
-
+#' @export
 print.slow_test <- function(x, ...)
 {
   corval=x$estimate

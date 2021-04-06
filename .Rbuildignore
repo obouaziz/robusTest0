@@ -1,3 +1,5 @@
 ^robusTest0\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^cortest_slow$
+^cortest_slow\.R$

@@ -114,20 +114,23 @@ cortest.default=function(x,y,alternative="two.sided",method="pearson",ties.break
     Vy=var(y)
     varlim=C11/(Vx*Vy)+C22*estimate^2/(4*Vx^3*Vy)+C33*estimate^2/(4*Vy^3*Vx)-C12*estimate/(Vx^2*Vy)-C13*estimate/(Vx*Vy^2)+C23*estimate^2/(2*Vx^2*Vy^2)
     if (alternative=="two.sided" | alternative=="t"){
-      Pval <- 2*(1-pt(abs(Tn),n-2))
+      Pval<-pval_pear_alt_two(Tn,n)
+      #Pval <- 2*(1-pt(abs(Tn),n-2))
       CIl <- estimate-qt(1-alpha/2,n-2)*sqrt(varlim/n)
       CIr <- estimate+qt(1-alpha/2,n-2)*sqrt(varlim/n)
     }
     #CIl <- (-qt(1-alpha/2,n-2)*deno+num)/cor_denom #does not work!!!
     #CIr <- (qt(1-alpha/2,n-2)*deno+num)/cor_denom} #does not work!!!
     if (alternative=="less"| alternative=="l"){
-      Pval <- pt(Tn,n-2)
+      Pval<-pval_pear_alt_less(Tn,n)
+      #Pval <- pt(Tn,n-2)
       CIl <- -1
       CIr <- estimate+qt(1-alpha,n-2)*sqrt(varlim/n)
       # CIr <- (qt(1-alpha,n-2)*deno+num)/cor_denom #does not work!!!
     }
     if (alternative=="greater"| alternative=="g"){
-      Pval <- 1-pt(Tn,n-2)
+      Pval<-pval_pear_alt_great(Tn,n)
+      #Pval <- 1-pt(Tn,n-2)
       CIl <- estimate-qt(1-alpha,n-2)*sqrt(varlim/n)
       #CIl <- (qt(alpha,n-2)*deno+num)/cor_denom #does not work!!!
       CIr <- 1}
@@ -273,7 +276,10 @@ print.test <- function(x, ...)
   if (x$method=="pearson"){
     names(corval)<-"cor"
     cat("\nCorrected Pearson correlation test\n\n")
-    cat(paste("t = ", round(x$statistic,4), ", " , "p-value = ",round(x$p.value,4),"\n",sep= ""))
+    if (round(x$p.value,4)==0){
+      cat(paste("t = ", round(x$statistic,4), ", " , "p-value <1e-4","\n",sep= ""))
+    } else {
+    cat(paste("t = ", round(x$statistic,4), ", " , "p-value = ",round(x$p.value,4),"\n",sep= ""))}
     if (x$alternative=="two.sided" | x$alternative=="t"){
       cat("alternative hypothesis: true correlation is not equal to 0\n")
       #print(x$CI)
@@ -291,7 +297,10 @@ print.test <- function(x, ...)
   if (x$method=="kendall"){
     names(corval)<-"tau"
     cat("\nCorrected Kendall correlation test\n\n")
-    cat(paste("t = ", round(x$statistic,4), ", " , "p-value = ",round(x$p.value,4),"\n",sep= ""))
+    if (round(x$p.value,4)==0){
+      cat(paste("t = ", round(x$statistic,4), ", " , "p-value <1e-4","\n",sep= ""))
+    } else {
+    cat(paste("t = ", round(x$statistic,4), ", " , "p-value = ",round(x$p.value,4),"\n",sep= ""))}
     if (x$alternative=="two.sided" | x$alternative=="t"){
       cat("alternative hypothesis: true tau is not equal to 0\n")}
     if (x$alternative=="less" | x$alternative=="l"){
@@ -308,7 +317,10 @@ print.test <- function(x, ...)
   if (x$method=="spearman"){
     names(corval)<-"rho"
     cat("\nCorrected Spearman correlation test\n\n")
-    cat(paste("S = ", round(x$statistic,4), ", " , "p-value = ",round(x$p.value,4),"\n",sep= ""))
+    if (round(x$p.value,4)==0){
+      cat(paste("t = ", round(x$statistic,4), ", " , "p-value <1e-4","\n",sep= ""))
+    } else {
+      cat(paste("S = ", round(x$statistic,4), ", " , "p-value = ",round(x$p.value,4),"\n",sep= ""))}
     if (x$alternative=="two.sided" | x$alternative=="t"){
       cat("alternative hypothesis: true rho is not equal to 0\n")}
     if (x$alternative=="less" | x$alternative=="l"){
@@ -323,6 +335,46 @@ print.test <- function(x, ...)
   }
 }
 
+pval_pear_alt_two<-function(Tn,n)
+{
+  if (n<=129){
+    y1<-(1:(2e5))/(2e5)
+    y1<-y1[seq(1,2e5,by=6)]
+    x1<-robust_Pearson_table[[n]]
+    funstep<-stats::stepfun(x1,c(0,y1))
+    Pval<-2*(1-funstep(abs(Tn)))
+  } else {
+    Pval <- 2*(1-pt(abs(Tn),n-2))
+  }
+  return(Pval)
+}
 
+pval_pear_alt_less<-function(Tn,n)
+{
+  if (n<=129){
+    y1<-(1:(2e5))/(2e5)
+    y1<-y1[seq(1,2e5,by=6)]
+    x1<-robust_Pearson_table[[n]]
+    funstep<-stats::stepfun(x1,c(0,y1))
+    Pval<-funstep(Tn)
+  } else {
+    Pval <- pt(Tn,n-2)
+  }
+  return(Pval)
+}
+
+pval_pear_alt_great<-function(Tn,n)
+{
+  if (n<=129){
+    y1<-(1:(2e5))/(2e5)
+    y1<-y1[seq(1,2e5,by=6)]
+    x1<-robust_Pearson_table[[n]]
+    funstep<-stats::stepfun(x1,c(0,y1))
+    Pval<-1-funstep(Tn)
+  } else {
+    Pval <- 1-pt(Tn,n-2)
+  }
+  return(Pval)
+}
 
 

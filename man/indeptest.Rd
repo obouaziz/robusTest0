@@ -4,7 +4,14 @@
 \alias{indeptest}
 \title{Robust independence test for two continuous variables of Kolmogorov-Smirnov's type}
 \usage{
-indeptest(x, y, N = 50000, simu = FALSE, ties.break = "none")
+indeptest(
+  x,
+  y,
+  N = 50000,
+  simu = FALSE,
+  ties.break = "none",
+  nb_tiebreak = 100
+)
 }
 \arguments{
 \item{x, y}{the two continuous variables. Must be of same length.}
@@ -16,6 +23,8 @@ distribution of the test statistic under the null hypothesis. If FALSE, pre comp
 for more information).}
 
 \item{ties.break}{the method used to break ties in case there are ties in the x or y vectors. Can be \code{"none"} or \code{"random"}.}
+
+\item{nb_tiebreak}{the number of repetition for breaking the ties when \code{ties.break="rep_random"}.}
 }
 \value{
 Returns the result of the test with its corresponding p-value and the value of the test statistic.
@@ -78,6 +87,13 @@ with(Evans,cortest(CHL[CDH==1],DBP[CDH==1])) #the robust Pearson test
 with(Evans,indeptest(CHL[CDH==1],DBP[CDH==1])) #the robust independence test
 with(Evans,indeptest(CHL[CDH==1],DBP[CDH==1],ties.break="random")) #the robust independence test
 #The robust tests give very different pvalues than the standard Pearson test!
+
+#Breaking the ties
+#The ties are broken once
+with(Evans,indeptest(CHL[CDH==1],DBP[CDH==1],ties.break="random"))
+#The ties are broken repetively and the average of the test statistics and p.values
+#are taken
+with(Evans,indeptest(CHL[CDH==1],DBP[CDH==1],ties.break="rep_random",nb_tiebreak=100))
 }
 \seealso{
 \code{\link{cortest}}, \code{\link{vartest}}, \code{\link{mediantest}}, \code{\link{wilcoxtest}}.

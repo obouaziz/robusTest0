@@ -9,6 +9,7 @@
 #' distribution of the test statistic under the null hypothesis. If FALSE, pre computed tables are used (see Details
 #' for more information).
 #' @param ties.break the method used to break ties in case there are ties in the x or y vectors. Can be \code{"none"} or \code{"random"}.
+#' @param nb_tiebreak the number of repetition for breaking the ties when \code{ties.break="rep_random"}.
 #' @details For two continuous variables, robustest tests H0 X and Y are independent
 #' against H1 X and Y are not independent.
 #'
@@ -65,11 +66,18 @@
 #' with(Evans,indeptest(CHL[CDH==1],DBP[CDH==1])) #the robust independence test
 #' with(Evans,indeptest(CHL[CDH==1],DBP[CDH==1],ties.break="random")) #the robust independence test
 #' #The robust tests give very different pvalues than the standard Pearson test!
+#'
+#' #Breaking the ties
+#' #The ties are broken once
+#' with(Evans,indeptest(CHL[CDH==1],DBP[CDH==1],ties.break="random"))
+#' #The ties are broken repetively and the average of the test statistics and p.values
+#' #are taken
+#' with(Evans,indeptest(CHL[CDH==1],DBP[CDH==1],ties.break="rep_random",nb_tiebreak=100))
 
 #' @export
-indeptest <- function(x,y,N=50000,simu=FALSE,ties.break="none") {UseMethod("indeptest")}
+indeptest <- function(x,y,N=50000,simu=FALSE,ties.break="none",nb_tiebreak=100) {UseMethod("indeptest")}
 #' @export
-indeptest.default<-function (x,y,N=50000,simu=FALSE,ties.break="none"){
+indeptest.default<-function (x,y,N=50000,simu=FALSE,ties.break="none",nb_tiebreak=100){
   if (length(x)!=length(y)) stop("'x' and 'y' must have the same length")
   Message=FALSE
   if (sum(is.na(x))!=0)
@@ -84,81 +92,59 @@ indeptest.default<-function (x,y,N=50000,simu=FALSE,ties.break="none"){
   }
   n <- length(x)
   if (n<3) stop("length of 'x' and 'y' must be greater than 2")
-  dupliX=duplicated(x)
-  nb_dupliX=sum(dupliX)
-  dupliY=duplicated(y)
-  nb_dupliY=sum(dupliY)
-  ties=x%in%y
-  if ((nb_dupliX+nb_dupliY)!=0 | sum(ties)!=0){
-    if (ties.break=="none") {
-      warning("The data contains ties! Use ties.break='random'")}
-    if (ties.break=="random") {
+  if (ties.break=="rep_random"){
+    dupliX=duplicated(x)
+    nb_dupliX=sum(dupliX)
+    dupliY=duplicated(y)
+    nb_dupliY=sum(dupliY)
+    ties=x%in%y
+    if ((nb_dupliX+nb_dupliY)!=0 | sum(ties)!=0){
       Message=TRUE
-      if (nb_dupliX!=0){
-        x[dupliX]=x[dupliX]+runif(nb_dupliX,-0.00001,0.00001)}
-      if (nb_dupliY!=0){
-        y[dupliY]=y[dupliY]+runif(nb_dupliY,-0.00001,0.00001)}
-    if (sum(ties)!=0){
-      x[ties] <- x[ties]+runif(sum(ties),-0.00001,0.00001)}
-    }
-  }
-  if (simu==TRUE){
-    ecdf_fun<-simulecdf(n,N)
-    Tn<-stat_indeptest(x,y)
-    Pval<-1-ecdf_fun(Tn)
-  } else {
-    #data(ecdf10.Rdata, envir=environment())#paste(ecdf,n,.Rdata,sep="")
-    #load(paste("ecdf",n,".Rdata",sep=""))#Tables/
-    if (3<=n & n<=150)
-    {
-      x1<-robust_table[[n]]$x
-      y1<-robust_table[[n]]$y
-      #load(system.file(paste("data_tables/ecdf",n,".RData",sep=""),package="testRcpp"))
-      #data(list=paste("ecdf",n,sep=""))
-    } else {
-      if (151<=n & n<=175)
+      pval_vect<-stat_vect<-rep(NA,nb_tiebreak)
+      for (j in 1:nb_tiebreak)
       {
-        x1<-robust_table[[150]]$x
-        y1<-robust_table[[150]]$y
-        #load(system.file("data_tables/ecdf150.RData",package="testRcpp"))
-        #data(ecdf150)
-      } else {
-        if (176<=n & n<=250)
-        {
-          x1<-robust_table[[151]]$x
-          y1<-robust_table[[151]]$y
-          #load(system.file("data_tables/ecdf200.RData",package="testRcpp"))
-          #data(ecdf200)
-        } else {
-          if (251<=n & n<=400)
-          {
-            x1<-robust_table[[152]]$x
-            y1<-robust_table[[152]]$y
-            #load(system.file("data_tables/ecdf300.RData",package="testRcpp"))
-            #data(ecdf300)
-          } else {
-            if (401<=n & n<=750)
-            {
-              x1<-robust_table[[153]]$x
-              y1<-robust_table[[153]]$y
-              #load(system.file("data_tables/ecdf500.RData",package="testRcpp"))
-              #data(ecdf500)
-            } else {
-              if (751<=n)
-              {
-                x1<-robust_table[[154]]$x
-                y1<-robust_table[[154]]$y
-                #load(system.file("data_tables/ecdf1000.RData",package="testRcpp"))
-                #data(ecdf1000)
-              }
-            }
-          }
-        }
+        newx=x
+        newy=y
+        if (nb_dupliX!=0){
+          newx=x[dupliX]+runif(nb_dupliX,-0.00001,0.00001)
+          newy=y}
+        if (nb_dupliY!=0){
+          newy[dupliY]=y[dupliY]+runif(nb_dupliY,-0.00001,0.00001)
+          newx=x}
+        if (sum(ties)!=0){
+          newx[ties] <- x[ties]+runif(sum(ties),-0.00001,0.00001)
+          newy=y}
+        result=pval_comput(newx,newy,simu=simu,N=N)
+        pval_vect[j]<-result$Pval
+        stat_vect[j]<-result$Tn
+        Pval=mean(pval_vect)
+        Tn=mean(stat_vect)
+      }
+    } else {
+      Pval<-pval_comput(x,y,simu=simu,N=N)
+    }
+  } else {
+    dupliX=duplicated(x)
+    nb_dupliX=sum(dupliX)
+    dupliY=duplicated(y)
+    nb_dupliY=sum(dupliY)
+    ties=x%in%y
+    if ((nb_dupliX+nb_dupliY)!=0 | sum(ties)!=0){
+      if (ties.break=="none") {
+        warning("The data contains ties! Use ties.break='random'")}
+      if (ties.break=="random") {
+        Message=TRUE
+        if (nb_dupliX!=0){
+          x[dupliX]=x[dupliX]+runif(nb_dupliX,-0.00001,0.00001)}
+        if (nb_dupliY!=0){
+          y[dupliY]=y[dupliY]+runif(nb_dupliY,-0.00001,0.00001)}
+        if (sum(ties)!=0){
+          x[ties] <- x[ties]+runif(sum(ties),-0.00001,0.00001)}
       }
     }
-    Tn<-stat_indeptest(x,y)
-    funstep<-stats::stepfun(x1,c(0,y1))
-    Pval<-1-funstep(Tn)
+    result=pval_comput(x,y,simu=simu,N=N)
+    Pval<-result$Pval
+    Tn<-result$Tn
   }
   #Pval<-1-ecdf_fun(Tn)
   result <- list(statistic=Tn, p.value=Pval,message=Message)
@@ -169,8 +155,83 @@ indeptest.default<-function (x,y,N=50000,simu=FALSE,ties.break="none"){
 print.indeptest <- function(x, ...)
 {
   cat("\nRobust independence test for two continuous variables\n\n")
-  cat(paste("t = ", round(x$statistic,4), ", " , "p-value = ",round(x$p.value,4),"\n",sep= ""))
+  if (round(x$p.value,4)==0){
+    cat(paste("t = ", round(x$statistic,4), ", " , "p-value <1e-4","\n",sep= ""))
+  } else {
+    cat(paste("t = ", round(x$statistic,4), ", " , "p-value = ",round(x$p.value,4),"\n",sep= ""))}
   if (x$message==TRUE) {
     cat("\nTies were detected in the dataset and they were randomly broken")
   }
 }
+
+pval_comput<-function(x,y,simu=FALSE,N=50000){
+  Tn<-stat_indeptest(x,y)
+  n<-length(x)
+  if (simu==TRUE){
+    ecdf_fun<-simulecdf(n,N)
+    Pval<-1-ecdf_fun(Tn)
+  } else {
+    #y1<-(1:(5e5))/(5e5)
+    #data(ecdf10.Rdata, envir=environment())#paste(ecdf,n,.Rdata,sep="")
+    #load(paste("ecdf",n,".Rdata",sep=""))#Tables/
+    if (3<=n & n<=150)
+    {
+      x1<-robust_table_indep[[n]]$x
+      y1<-robust_table_indep[[n]]$y
+      #y1<-robust_table[[n]]$y
+      ##load(system.file(paste("data_tables/ecdf",n,".RData",sep=""),package="testRcpp"))
+      ##data(list=paste("ecdf",n,sep=""))
+    } else {
+      if (151<=n & n<=175)
+      {
+        x1<-robust_table_indep[[150]]$x
+        y1<-robust_table_indep[[150]]$y
+        #y1<-robust_table[[150]]$y
+        ##load(system.file("data_tables/ecdf150.RData",package="testRcpp"))
+        ##data(ecdf150)
+      } else {
+        if (176<=n & n<=250)
+        {
+          x1<-robust_table_indep[[151]]$x
+          y1<-robust_table_indep[[151]]$y
+          #y1<-robust_table[[151]]$y
+          ##load(system.file("data_tables/ecdf200.RData",package="testRcpp"))
+          ##data(ecdf200)
+        } else {
+          if (251<=n & n<=400)
+          {
+            x1<-robust_table_indep[[152]]$x
+            y1<-robust_table_indep[[152]]$y
+            #y1<-robust_table[[152]]$y
+            ##load(system.file("data_tables/ecdf300.RData",package="testRcpp"))
+            ##data(ecdf300)
+          } else {
+            if (401<=n & n<=750)
+            {
+              x1<-robust_table_indep[[153]]$x
+              y1<-robust_table_indep[[153]]$y
+              #y1<-robust_table[[153]]$y
+              ##load(system.file("data_tables/ecdf500.RData",package="testRcpp"))
+              ##data(ecdf500)
+            } else {
+              if (751<=n)
+              {
+                x1<-robust_table_indep[[154]]$x
+                y1<-robust_table_indep[[154]]$y
+                #y1<-robust_table[[154]]$y
+                ##load(system.file("data_tables/ecdf1000.RData",package="testRcpp"))
+                ##data(ecdf1000)
+              }
+            }
+          }
+        }
+      }
+    }
+    funstep<-stats::stepfun(x1,c(0,y1))
+    Pval<-1-funstep(Tn)
+  }
+  return(list(Tn=Tn,Pval=Pval))
+}
+
+
+
