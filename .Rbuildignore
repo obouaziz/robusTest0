@@ -3,3 +3,4 @@
 ^LICENSE\.md$
 ^cortest_slow$
 ^cortest_slow\.R$
+^Temp_fun$

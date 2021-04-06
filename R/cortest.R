@@ -90,6 +90,7 @@ cortest.default=function(x,y,alternative="two.sided",method="pearson",ties.break
 {
   if (length(x)!=length(y)) stop("'x' and 'y' must have the same length")
   n <- length(x)
+  if (n<=2) stop("lengths of 'x' and 'y'  must be greater than 2")
   Message=FALSE
   alpha=1-conf.level
   if (method=="pearson"){
