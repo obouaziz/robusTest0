@@ -16,7 +16,7 @@
 #' Note that only the ties inside each vector are broken (but not ties between vectors).
 #' @keywords test
 #' @seealso \code{\link{vartest}}, \code{\link{indeptest}}, \code{\link{mediantest}}, \code{\link{wilcoxtest}}.
-#' @importFrom stats cov pnorm pt qnorm qt runif var
+#' @importFrom stats cov pnorm pt qnorm qt runif sd var
 #' @export
 #' @examples
 #' #Application on the Evans dataset
@@ -94,31 +94,28 @@ cortest.default=function(x,y,alternative="two.sided",method="pearson",ties.break
   Message=FALSE
   alpha=1-conf.level
   if (method=="pearson"){
-    x_cent<-(x-mean(x))
-    y_cent<-(y-mean(y))
-    R <- x_cent*y_cent
+    x<-(x-mean(x))/sd(x)
+    y<-(y-mean(y))/sd(y)
+    estimate=stats::cor(x,y)
+    R <- x*y
     num=sum(R)
-    #deno <- sqrt(var(R))
     deno <- sqrt(sum(R^2)-((sum(R))^2)/n)
-    #Tn <- sqrt(n)*cov(X,y)/deno
-    Tn <- num/deno#sqrt(sum(R^2))
-    cor_denom<-sqrt(sum(x_cent^2)*sum(y_cent^2))
-    estimate=num/cor_denom
+    Tn <- num/deno
     #Construction of CI using the delta-method
-    C11=var(x_cent*y_cent)
-    C22=var(x_cent^2)
-    C33=var(y_cent^2)
-    C12=cov(x_cent^2,x_cent*y_cent)
-    C13=cov(y_cent^2,x_cent*y_cent)
-    C23=cov(y_cent^2,x_cent^2)
-    Vx=var(x)
-    Vy=var(y)
-    varlim=C11/(Vx*Vy)+C22*estimate^2/(4*Vx^3*Vy)+C33*estimate^2/(4*Vy^3*Vx)-C12*estimate/(Vx^2*Vy)-C13*estimate/(Vx*Vy^2)+C23*estimate^2/(2*Vx^2*Vy^2)
+    C11=var(x*y)
+    C22=var(x^2)
+    C33=var(y^2)
+    C12=cov(x^2,x*y)
+    C13=cov(y^2,x*y)
+    C23=cov(y^2,x^2)
+    varlim=C11+C22*(estimate^2)/4+C33*(estimate)^2/4-C12*estimate-C13*estimate+C23*estimate^2/2
     if (alternative=="two.sided" | alternative=="t"){
       Pval<-pval_pear_alt_two(Tn,n)
       #Pval <- 2*(1-pt(abs(Tn),n-2))
       CIl <- estimate-qt(1-alpha/2,n-2)*sqrt(varlim/n)
       CIr <- estimate+qt(1-alpha/2,n-2)*sqrt(varlim/n)
+      if (CIl<(-1)) { CIl<-(-1)}
+      if (CIr>1) { CIr<-1}
     }
     #CIl <- (-qt(1-alpha/2,n-2)*deno+num)/cor_denom #does not work!!!
     #CIr <- (qt(1-alpha/2,n-2)*deno+num)/cor_denom} #does not work!!!
